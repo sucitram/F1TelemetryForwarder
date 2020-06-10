@@ -48,6 +48,7 @@ class TelemetryDestination {
         int packetType = packet.getData()[5] & 0xFF // uint8
         boolean shouldFilter = [0,2,6,7].contains(packetType) // configurable frequency packets
 
+        long now = System.currentTimeMillis()
         if (shouldFilter && packetMillis[packetType] + throttleWindow > now) {
             return; // should not forward - within throttle window
         }
