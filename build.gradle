@@ -1,0 +1,41 @@
+plugins {
+    id 'groovy'
+    id 'java'
+    id "com.github.johnrengelman.shadow" version "5.2.0"
+
+    id 'edu.sc.seis.launch4j' version '2.4.3'
+}
+
+group 'com.github.sucitram.tools'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:3.0.3'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.github.sucitram.tools.F1TelemetryFilter'
+    }
+}
+
+
+shadowJar {
+    baseName = 'F1TelemetryFilter'
+    manifest {
+        inheritFrom project.tasks.jar.manifest
+    }
+
+    archiveFileName = "${baseName}-${version}.jar"
+}
+
+launch4j {
+    mainClassName = 'com.github.sucitram.tools.F1TelemetryFilter'
+    headerType="console"
+    copyConfigurable = project.tasks.shadowJar.outputs.files
+    jar = "lib/${project.tasks.shadowJar.archiveName}"
+}
