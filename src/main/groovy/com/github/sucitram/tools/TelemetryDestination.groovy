@@ -12,6 +12,7 @@ class TelemetryDestination {
 
     // capture time last packet of each type was transmitted to support simple throttling
     long[] packetMillis = new long[8]
+    static short game, major, minor
 
     /**
      * Destination application
@@ -45,7 +46,7 @@ class TelemetryDestination {
     void forward(DatagramPacket packet) {
         // Relatively easy to read the year from the packet if we wanted to support other games
         // https://forums.codemasters.com/topic/44592-f1-2019-udp-specification/
-        int packetType = packet.getData()[5] & 0xFF // uint8
+        int packetType = uint8(packet, 5)
         boolean shouldFilter = [0,2,6,7].contains(packetType) // configurable frequency packets
 
         long now = System.currentTimeMillis()
@@ -53,6 +54,22 @@ class TelemetryDestination {
             return; // should not forward - within throttle window
         }
 
+        // detect game version
+        def year = uint16(packet, 0)
+        def verMajor = uint8(packet, 2)
+        def verMinor = uint8(packet, 3)
+
+        if (year != game || verMajor != major || verMinor != minor) {
+            game = year
+            major = verMajor
+            minor = verMinor
+
+            println "Detected F1 $game v$major.$minor"
+        }
+
+        if (packetMillis[packetType] == 0) {
+//            println "  Received Packet Types: ${Arrays.asList(packetMillis).withIndex().collect { long entry, int i -> entry != 0 ? i : null } - null}"
+        }
         packetMillis[packetType] = now
         DatagramPacket forward = new DatagramPacket(packet.getData(), packet.getLength(), host, port)
         socket.send(forward)
@@ -60,5 +77,13 @@ class TelemetryDestination {
 
     String toString() {
         return "host:${host.canonicalHostName} port:$port frequency:${rateHz}hz period:${throttleWindow}ms"
+    }
+
+    def uint16(DatagramPacket packet, offset) {
+        return ((packet.getData()[offset+1] & 0xFF) << 8) | (packet.getData()[offset+0] & 0xFF)
+    }
+
+    def uint8(DatagramPacket packet, offset) {
+        return (packet.getData()[offset] & 0xFF)
     }
 }
