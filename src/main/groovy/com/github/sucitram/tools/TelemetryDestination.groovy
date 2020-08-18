@@ -11,8 +11,8 @@ class TelemetryDestination {
     int throttleWindow
 
     // capture time last packet of each type was transmitted to support simple throttling
-    long[] packetMillis = new long[8]
-    static short game, major, minor
+    long[] packetMillis = new long[10]
+    static int game, major, minor, printPacketTypes = -1
 
     /**
      * Destination application
@@ -25,7 +25,7 @@ class TelemetryDestination {
         this.host = InetAddress.getByName(host)
         this.port = port
         this.rateHz = rateHz
-        this.throttleWindow = Math.ceil(1000/rateHz)
+        this.throttleWindow = Math.ceil(1000/rateHz).toInteger()
         8.times { packetMillis[it] = 0 }
 
         socket = new DatagramSocket()
@@ -51,13 +51,13 @@ class TelemetryDestination {
 
         long now = System.currentTimeMillis()
         if (shouldFilter && packetMillis[packetType] + throttleWindow > now) {
-            return; // should not forward - within throttle window
+            return // should not forward - within throttle window
         }
 
         // detect game version
-        def year = uint16(packet, 0)
-        def verMajor = uint8(packet, 2)
-        def verMinor = uint8(packet, 3)
+        int year = uint16(packet, 0)
+        int verMajor = uint8(packet, 2)
+        int verMinor = uint8(packet, 3)
 
         if (year != game || verMajor != major || verMinor != minor) {
             game = year
@@ -65,10 +65,14 @@ class TelemetryDestination {
             minor = verMinor
 
             println "Detected F1 $game v$major.$minor"
+            printPacketTypes = 1000
         }
 
-        if (packetMillis[packetType] == 0) {
-//            println "  Received Packet Types: ${Arrays.asList(packetMillis).withIndex().collect { long entry, int i -> entry != 0 ? i : null } - null}"
+        if (printPacketTypes >= 0) {
+            printPacketTypes--
+            if (printPacketTypes == 0) {
+                println "     Received Packet Types: ${Arrays.asList(packetMillis).withIndex().collect { long entry, int i -> entry != 0 ? i : null } - null}"
+            }
         }
         packetMillis[packetType] = now
         DatagramPacket forward = new DatagramPacket(packet.getData(), packet.getLength(), host, port)
@@ -79,11 +83,11 @@ class TelemetryDestination {
         return "host:${host.canonicalHostName} port:$port frequency:${rateHz}hz period:${throttleWindow}ms"
     }
 
-    def uint16(DatagramPacket packet, offset) {
+    static int uint16(DatagramPacket packet, offset) {
         return ((packet.getData()[offset+1] & 0xFF) << 8) | (packet.getData()[offset+0] & 0xFF)
     }
 
-    def uint8(DatagramPacket packet, offset) {
+    static int uint8(DatagramPacket packet, offset) {
         return (packet.getData()[offset] & 0xFF)
     }
 }

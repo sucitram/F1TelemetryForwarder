@@ -52,7 +52,7 @@ class F1TelemetryFilter extends Thread {
         }
     }
 
-    public static void main(args) {
+    static void main(args) {
 
         CliBuilder cli = new CliBuilder(usage:"F1TelemetryForwarder")
         cli.h(argName:'help', type:boolean, "Display this usage information")
@@ -65,8 +65,8 @@ class F1TelemetryFilter extends Thread {
             return
         }
 
-        params.ds.inject(new F1TelemetryFilter(params.p)) {filter, destination ->
-            return filter.addPortForward(new TelemetryDestination(destination.split(":")))
+        params.ds.inject(new F1TelemetryFilter(params.p)) {F1TelemetryFilter filter, String dest ->
+            return filter.addPortForward(new TelemetryDestination(dest.split(":")))
         }.run()
     }
 }
