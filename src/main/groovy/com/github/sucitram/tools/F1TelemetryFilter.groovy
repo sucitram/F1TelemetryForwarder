@@ -16,7 +16,7 @@ import groovy.cli.picocli.OptionAccessor
 
 class F1TelemetryFilter extends Thread {
     DatagramSocket gameSocket
-    byte[] buf = new byte[1347] // max size of a f1 2019 datagram
+    byte[] buf = new byte[2000] // max size of a f1 2020 is 1464 datagram
 
     Set<TelemetryDestination> applications = new HashSet<TelemetryDestination>()
 
